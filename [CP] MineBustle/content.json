@@ -1,37 +1,16 @@
 {
   "Format": "2.3.0",
+  "ConfigSchema": {
+    "EnableAltar": {
+      "AllowValues": "true, false",
+      "Default": true
+    }
+  },
   "Changes": [
     {
-      "Action": "EditMap",
-      "Target": "Maps/Mountain",
-      "MapTiles": [
-        {
-          "Position": { "X": 55, "Y": 7 },
-          "Layer": "Buildings",
-          "SetIndex": 256,
-          "SetProperties": {
-            "Action": "YobaAltar"
-          }
-        },
-        {
-          "Position": { "X": 56, "Y": 7 },
-          "Layer": "Buildings",
-          "SetIndex": 257,
-          "SetProperties": {
-            "Action": "YobaAltar"
-          }
-        },
-        {
-          "Position": { "X": 55, "Y": 8 },
-          "Layer": "Buildings",
-          "SetIndex": 272
-        },
-        {
-          "Position": { "X": 56, "Y": 8 },
-          "Layer": "Buildings",
-          "SetIndex": 273
-        }
-      ]
+      "Action": "Load",
+      "Target": "Mods/MineBustle/AltarSprite",
+      "FromFile": "assets/altar.png"
     }
   ]
 }

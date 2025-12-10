@@ -61,6 +61,68 @@ public class ModEntry : Mod
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
         Monitor.Log("游戏已启动，由巴的祭坛已准备就绪。", LogLevel.Debug);
+
+        // 集成 Generic Mod Config Menu
+        SetupConfigMenu();
+    }
+
+    /// <summary>
+    /// 设置 Generic Mod Config Menu
+    /// </summary>
+    private void SetupConfigMenu()
+    {
+        // 获取 GMCM API
+        var configMenu = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+        if (configMenu is null)
+        {
+            Monitor.Log("未找到 Generic Mod Config Menu，跳过配置菜单集成。", LogLevel.Debug);
+            return;
+        }
+
+        // 注册模组
+        configMenu.Register(
+            mod: ModManifest,
+            reset: () => Config = new ModConfig(),
+            save: () => Helper.WriteConfig(Config)
+        );
+
+        // 添加配置选项
+        configMenu.AddNumberOption(
+            mod: ModManifest,
+            name: () => "基础费用",
+            tooltip: () => "献祭的基础金币费用（默认: 500）",
+            getValue: () => (float)Config.BaseFee,
+            setValue: value => Config.BaseFee = (int)value,
+            min: 0f,
+            max: 10000f,
+            interval: 50f
+        );
+
+        configMenu.AddNumberOption(
+            mod: ModManifest,
+            name: () => "通胀系数",
+            tooltip: () => "基于总收入的费用增长系数（默认: 0.0001）",
+            getValue: () => (float)Config.InflationCoefficient,
+            setValue: value => Config.InflationCoefficient = (double)value,
+            min: 0f,
+            max: 0.001f,
+            interval: 0.00001f,
+            formatValue: value => value.ToString("F5")
+        );
+
+        configMenu.AddNumberOption(
+            mod: ModManifest,
+            name: () => "惩罚指数",
+            tooltip: () => "倍率增长的惩罚指数（默认: 1.5）",
+            getValue: () => (float)Config.PenaltyExponent,
+            setValue: value => Config.PenaltyExponent = (double)value,
+            min: 1.0f,
+            max: 3.0f,
+            interval: 0.1f,
+            formatValue: value => value.ToString("F1")
+        );
+
+        Monitor.Log("Generic Mod Config Menu 集成成功！", LogLevel.Debug);
     }
 
     /// <summary>
