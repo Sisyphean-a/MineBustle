@@ -4,224 +4,299 @@ using StardewValley;
 using StardewValley.Menus;
 using System;
 
-namespace MineBustle;
-
-public class AltarMenu : IClickableMenu
+namespace MineBustle
 {
-    private const int MenuWidth = 600;
-    private const int MenuHeight = 400;
-    private const int SliderWidth = 400;
-    private const int SliderHeight = 24;
-    private const int SliderKnobSize = 32;
-
-    private Rectangle sliderBounds;
-    private Rectangle sliderKnobBounds;
-    private bool isDraggingSlider = false;
-    private float sliderPosition = 0f;
-
-    private ClickableTextureComponent confirmButton;
-    private ClickableTextureComponent cancelButton;
-
-    private double currentMultiplier = 1.0;
-    private int currentCost = 0;
-
-    public AltarMenu() : base(
-        (Game1.uiViewport.Width - MenuWidth) / 2,
-        (Game1.uiViewport.Height - MenuHeight) / 2,
-        MenuWidth,
-        MenuHeight)
+    public class AltarMenu : IClickableMenu
     {
-        sliderBounds = new Rectangle(
-            xPositionOnScreen + (MenuWidth - SliderWidth) / 2,
-            yPositionOnScreen + 150,
-            SliderWidth,
-            SliderHeight
-        );
+        // 保持窗口尺寸
+        private const int MenuWidth = 800;
+        private const int MenuHeight = 500; 
 
-        UpdateSliderKnob();
+        // 布局常量
+        private const int SliderBarWidth = 500;
+        private const int SliderBarHeight = 24; 
+        private const int ButtonGap = 16;       
 
-        confirmButton = new ClickableTextureComponent(
-            new Rectangle(xPositionOnScreen + MenuWidth / 2 - 80, yPositionOnScreen + MenuHeight - 100, 64, 64),
-            Game1.mouseCursors,
-            Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 46),
-            1f
-        );
+        private Rectangle sliderBounds;
+        private Rectangle sliderKnobBounds;
+        private bool isDraggingSlider = false;
+        private float sliderPosition = 0f;
 
-        cancelButton = new ClickableTextureComponent(
-            new Rectangle(xPositionOnScreen + MenuWidth / 2 + 16, yPositionOnScreen + MenuHeight - 100, 64, 64),
-            Game1.mouseCursors,
-            Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 47),
-            1f
-        );
+        private ClickableTextureComponent confirmButton;
+        private ClickableTextureComponent cancelButton;
 
-        UpdateMultiplierAndCost();
-    }
+        private double currentMultiplier = 1.0;
+        private int currentCost = 0;
 
-    private void UpdateSliderKnob()
-    {
-        int knobX = sliderBounds.X + (int)(sliderPosition * (SliderWidth - SliderKnobSize));
-        sliderKnobBounds = new Rectangle(knobX, sliderBounds.Y - 4, SliderKnobSize, SliderKnobSize);
-    }
+        // 缓存标题位置
+        private Vector2 titlePosition;
+        private Vector2 descriptionPosition;
 
-    private void UpdateMultiplierAndCost()
-    {
-        currentMultiplier = 1.0 + (sliderPosition * 9.0);
-        currentCost = CalculateCost(currentMultiplier);
-    }
-
-    private int CalculateCost(double multiplier)
-    {
-        var config = ModEntry.Config;
-        double baseFee = config.BaseFee;
-        double totalEarnings = Game1.player.totalMoneyEarned;
-        double alpha = config.InflationCoefficient;
-        double beta = config.PenaltyExponent;
-
-        double cost = (baseFee + alpha * totalEarnings) * Math.Pow(multiplier - 1.0, beta);
-        return (int)Math.Round(cost);
-    }
-
-    public override void receiveLeftClick(int x, int y, bool playSound = true)
-    {
-        base.receiveLeftClick(x, y, playSound);
-
-        if (sliderKnobBounds.Contains(x, y))
+        public AltarMenu() : base(
+            (Game1.uiViewport.Width - MenuWidth) / 2,
+            (Game1.uiViewport.Height - MenuHeight) / 2,
+            MenuWidth,
+            MenuHeight)
         {
-            isDraggingSlider = true;
-            Game1.playSound("drumkit6");
+            // === 核心修复 1: 大幅增加顶部边距 ===
+            // 之前的 +96 还不够，对话框顶部边框很厚，这里推到 +128 开始画内容
+            int contentTop = yPositionOnScreen + 128; 
+            
+            // 1. 标题位置 (从内容顶部开始)
+            string title = "由巴的祭坛";
+            Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
+            // 标题稍微往上提一点点，作为大标题
+            titlePosition = new Vector2(xPositionOnScreen + (MenuWidth - titleSize.X) / 2, contentTop - 40);
+
+            // 2. 描述位置 (放在标题下方)
+            string description = "献祭金币以增强今日矿井的怪物生成";
+            Vector2 descSize = Game1.smallFont.MeasureString(description);
+            descriptionPosition = new Vector2(xPositionOnScreen + (MenuWidth - descSize.X) / 2, contentTop + 20);
+
+            // 3. 滑块位置 (位于描述下方 50px)
+            sliderBounds = new Rectangle(
+                xPositionOnScreen + (MenuWidth - SliderBarWidth) / 2,
+                contentTop + 80, 
+                SliderBarWidth,
+                SliderBarHeight
+            );
+
+            UpdateSliderKnob();
+
+            // 4. 按钮位置 (底部留出空间)
+            int buttonY = yPositionOnScreen + MenuHeight - 90;
+            int buttonTotalWidth = 64 + 64 + ButtonGap; 
+            int buttonStartX = xPositionOnScreen + (MenuWidth - buttonTotalWidth) / 2;
+
+            confirmButton = new ClickableTextureComponent(
+                new Rectangle(buttonStartX, buttonY, 64, 64),
+                Game1.mouseCursors,
+                Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 46),
+                1f
+            ) { myID = 101, rightNeighborID = 102 };
+
+            cancelButton = new ClickableTextureComponent(
+                new Rectangle(buttonStartX + 64 + ButtonGap, buttonY, 64, 64),
+                Game1.mouseCursors,
+                Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 47),
+                1f
+            ) { myID = 102, leftNeighborID = 101 };
+
+            // 初始化计算
+            UpdateMultiplierAndCost();
+
+            if (Game1.options.SnappyMenus)
+            {
+                populateClickableComponentList();
+                snapToDefaultClickableComponent();
+            }
         }
-        else if (confirmButton.containsPoint(x, y))
+
+        private void UpdateSliderKnob()
         {
-            ConfirmOffering();
+            // 视觉大小 32x32，看起来更精致
+            int knobSize = 32; 
+            int knobX = sliderBounds.X + (int)(sliderPosition * (SliderBarWidth - knobSize));
+            int knobY = sliderBounds.Y + (sliderBounds.Height - knobSize) / 2;
+            
+            sliderKnobBounds = new Rectangle(knobX, knobY, knobSize, knobSize);
         }
-        else if (cancelButton.containsPoint(x, y))
+
+        private void UpdateMultiplierAndCost()
         {
-            exitThisMenu();
-            Game1.playSound("bigDeSelect");
+            // 范围：1.0 到 10.0 (增量 9.0)
+            currentMultiplier = 1.0 + (sliderPosition * 9.0);
+            currentCost = CalculateCost(currentMultiplier);
         }
-    }
 
-    public override void releaseLeftClick(int x, int y)
-    {
-        base.releaseLeftClick(x, y);
-        isDraggingSlider = false;
-    }
-
-    public override void performHoverAction(int x, int y)
-    {
-        base.performHoverAction(x, y);
-
-        if (isDraggingSlider)
+        // === 核心修复 3: 实装真实的配置算法 ===
+        private int CalculateCost(double multiplier)
         {
-            float newPosition = (float)(x - sliderBounds.X) / (SliderWidth - SliderKnobSize);
+            try 
+            {
+                 // 从 ModEntry 获取配置
+                 var config = ModEntry.Config;
+                 
+                 double baseFee = config.BaseFee;
+                 double totalEarnings = Game1.player.totalMoneyEarned;
+                 double alpha = config.InflationCoefficient;
+                 double beta = config.PenaltyExponent;
+
+                 // 公式: (基础费 + 通胀系数 * 总收入) * (倍率增量 ^ 惩罚指数)
+                 // 注意：multiplier - 1.0 是因为 1.0 倍率（无加成）应该是 0 费或者基础费，
+                 // 但根据你的公式，如果 multiplier 是 1.0，Pow 结果是 0，费用为 0。这是合理的（不献祭不花钱）。
+                 // 如果你想让 1.0 倍率也有基础费，公式可能需要调整。这里按你的公式原样实现。
+                 
+                 double cost = (baseFee + alpha * totalEarnings) * Math.Pow(multiplier - 1.0, beta);
+                 
+                 // 确保最小为0
+                 return Math.Max(0, (int)Math.Round(cost));
+            }
+            catch
+            {
+                // 如果出错（比如开发环境下没加载ModEntry），返回默认值防止崩溃
+                return (int)(100 * multiplier);
+            }
+        }
+
+        public override void receiveLeftClick(int x, int y, bool playSound = true)
+        {
+            base.receiveLeftClick(x, y, playSound);
+
+            Rectangle extendedKnobBounds = sliderKnobBounds;
+            extendedKnobBounds.Inflate(10, 10); 
+
+            if (sliderBounds.Contains(x,y) || extendedKnobBounds.Contains(x, y))
+            {
+                isDraggingSlider = true;
+                Game1.playSound("drumkit6");
+                PerformSlide(x);
+            }
+            else if (confirmButton.containsPoint(x, y))
+            {
+                ConfirmOffering();
+            }
+            else if (cancelButton.containsPoint(x, y))
+            {
+                exitThisMenu();
+                Game1.playSound("bigDeSelect");
+            }
+        }
+
+        public override void releaseLeftClick(int x, int y)
+        {
+            base.releaseLeftClick(x, y);
+            isDraggingSlider = false;
+        }
+
+        public override void performHoverAction(int x, int y)
+        {
+            base.performHoverAction(x, y);
+            confirmButton.tryHover(x, y);
+            cancelButton.tryHover(x, y);
+
+            if (isDraggingSlider)
+            {
+                PerformSlide(x);
+            }
+        }
+
+        private void PerformSlide(int mouseX)
+        {
+            float newPosition = (float)(mouseX - sliderBounds.X - sliderKnobBounds.Width / 2) / (SliderBarWidth - sliderKnobBounds.Width);
             sliderPosition = Math.Clamp(newPosition, 0f, 1f);
             UpdateSliderKnob();
             UpdateMultiplierAndCost();
         }
-    }
 
-    private void ConfirmOffering()
-    {
-        if (Game1.player.Money < currentCost)
+        private void ConfirmOffering()
         {
-            Game1.playSound("cancel");
-            Game1.showRedMessage("金币不足！");
-            return;
+            if (Game1.player.Money < currentCost)
+            {
+                Game1.playSound("cancel");
+                Game1.showRedMessage("金币不足！");
+                return;
+            }
+
+            // 扣钱
+            Game1.player.Money -= currentCost;
+            
+            // 保存配置
+            ModEntry.Config.CurrentMultiplier = currentMultiplier;
+            ModEntry.SaveConfig();
+
+            Game1.playSound("yoba");
+            
+            // 特效
+            Game1.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite(
+                "LooseSprites\\Cursors",
+                new Rectangle(432, 1664, 16, 16),
+                80f, 8, 0, Game1.player.Position, false, false, 1f, 0f, Color.Gold, 4f, 0f, 0f, 0f
+            ));
+
+            string message = $"献祭成功！倍率：{currentMultiplier:F1}x";
+            Game1.addHUDMessage(new HUDMessage(message, HUDMessage.achievement_type));
+
+            ModEntry.ModMonitor.Log($"玩家献祭 {currentCost}g，设置倍率为 {currentMultiplier:F1}x", StardewModdingAPI.LogLevel.Info);
+
+            exitThisMenu();
         }
 
-        Game1.player.Money -= currentCost;
-        ModEntry.Config.CurrentMultiplier = currentMultiplier;
-        ModEntry.SaveConfig();
+        public override void draw(SpriteBatch b)
+        {
+            b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.75f);
+            
+            // 画主背景
+            Game1.drawDialogueBox(xPositionOnScreen, yPositionOnScreen, MenuWidth, MenuHeight, false, true);
 
-        Game1.playSound("yoba");
-        // 创建金色闪光效果（使用临时精灵）
-        Game1.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite(
-            "LooseSprites\\Cursors",
-            new Rectangle(432, 1664, 16, 16),
-            80f,
-            8,
-            0,
-            Game1.player.Position,
-            false,
-            false,
-            1f,
-            0f,
-            Color.Gold,
-            4f,
-            0f,
-            0f,
-            0f
-        ));
+            // 1. 标题
+            Utility.drawTextWithShadow(b, "由巴的祭坛", Game1.dialogueFont,
+                titlePosition, Game1.textColor);
 
-        string message = $"献祭成功！今日矿井怪物生成倍率：{currentMultiplier:F1}x";
-        Game1.addHUDMessage(new HUDMessage(message, HUDMessage.achievement_type));
+            // 2. 描述 (=== 核心修复 2: 使用 Game1.textColor 提高对比度 ===)
+            Utility.drawTextWithShadow(b, "献祭金币以增强今日矿井的怪物生成", Game1.smallFont,
+                descriptionPosition, Game1.textColor); // 这里改为了 textColor，深褐色
 
-        ModEntry.ModMonitor.Log($"玩家献祭 {currentCost}g，设置倍率为 {currentMultiplier:F1}x", StardewModdingAPI.LogLevel.Info);
+            // 3. 滑块组件
+            DrawSliderTrack(b);
+            DrawSliderKnob(b);
 
-        exitThisMenu();
-    }
+            // 计算信息显示的垂直位置 (滑块下方 60px)
+            float infoStartHeight = sliderBounds.Y + 60;
+            
+            // 4. 倍率显示
+            string multiplierText = $"怪物生成倍率: {currentMultiplier:F1}x";
+            Vector2 multiplierSize = Game1.dialogueFont.MeasureString(multiplierText);
+            Utility.drawTextWithShadow(b, multiplierText, Game1.dialogueFont,
+                new Vector2(xPositionOnScreen + (MenuWidth - multiplierSize.X) / 2, infoStartHeight), Game1.textColor);
 
-    public override void draw(SpriteBatch b)
-    {
-        b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.75f);
-        Game1.drawDialogueBox(xPositionOnScreen, yPositionOnScreen, MenuWidth, MenuHeight, false, true);
+            // 5. 费用显示
+            bool canAfford = Game1.player.Money >= currentCost;
+            // 自定义一个深红色，比纯红看起来舒服一点
+            Color costColor = canAfford ? new Color(50, 150, 50) : new Color(200, 60, 60); 
 
-        string title = "由巴的祭坛";
-        Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
-        Utility.drawTextWithShadow(b, title, Game1.dialogueFont,
-            new Vector2(xPositionOnScreen + (MenuWidth - titleSize.X) / 2, yPositionOnScreen + 32), Game1.textColor);
+            string costText = $"所需金币: {currentCost}g";
+            Vector2 costSize = Game1.dialogueFont.MeasureString(costText);
+            Utility.drawTextWithShadow(b, costText, Game1.dialogueFont,
+                new Vector2(xPositionOnScreen + (MenuWidth - costSize.X) / 2, infoStartHeight + 50), costColor);
 
-        string description = "献祭金币以增强今日矿井的怪物生成";
-        Vector2 descSize = Game1.smallFont.MeasureString(description);
-        Utility.drawTextWithShadow(b, description, Game1.smallFont,
-            new Vector2(xPositionOnScreen + (MenuWidth - descSize.X) / 2, yPositionOnScreen + 80), Color.Gray);
+            // 6. 按钮
+            confirmButton.draw(b);
+            cancelButton.draw(b);
 
-        DrawSliderTrack(b);
-        DrawSliderKnob(b);
+            drawMouse(b);
+        }
 
-        string multiplierText = $"怪物生成倍率: {currentMultiplier:F1}x";
-        Vector2 multiplierSize = Game1.dialogueFont.MeasureString(multiplierText);
-        Utility.drawTextWithShadow(b, multiplierText, Game1.dialogueFont,
-            new Vector2(xPositionOnScreen + (MenuWidth - multiplierSize.X) / 2, yPositionOnScreen + 200), Game1.textColor);
+        private void DrawSliderTrack(SpriteBatch b)
+        {
+            // 轨道底色 (深灰)
+            Rectangle trackRect = new Rectangle(sliderBounds.X, sliderBounds.Y + (sliderBounds.Height - 6) / 2, sliderBounds.Width, 6);
+            b.Draw(Game1.staminaRect, trackRect, Color.DarkGray);
 
-        bool canAfford = Game1.player.Money >= currentCost;
-        Color costColor = canAfford ? Color.Green : Color.Red;
-        string costText = $"所需金币: {currentCost}g";
-        Vector2 costSize = Game1.dialogueFont.MeasureString(costText);
-        Utility.drawTextWithShadow(b, costText, Game1.dialogueFont,
-            new Vector2(xPositionOnScreen + (MenuWidth - costSize.X) / 2, yPositionOnScreen + 250), costColor);
+            // 轨道进度 (金色)
+            int highlightWidth = (int)(sliderPosition * sliderBounds.Width);
+            highlightWidth = Math.Max(0, Math.Min(highlightWidth, sliderBounds.Width));
+            
+            Rectangle fillRect = new Rectangle(sliderBounds.X, trackRect.Y, highlightWidth, 6);
+            b.Draw(Game1.staminaRect, fillRect, Color.Orange); // 用 Orange 或 Gold
+        }
 
-        confirmButton.draw(b);
-        cancelButton.draw(b);
+        private void DrawSliderKnob(SpriteBatch b)
+        {
+            // === 核心修复 4: 手绘滑块，不再依赖贴图 ===
+            // 之前的贴图坐标可能在你的版本里对不上，导致出现杂色。
+            // 这里我们用代码画一个带边框的方块，类似于游戏里的复选框风格。
+            
+            // 1. 画边框 (深棕色)
+            b.Draw(Game1.staminaRect, sliderKnobBounds, new Color(139, 69, 19)); 
+            
+            // 2. 画内部 (金色/米色)，稍微缩小2像素露出边框
+            Rectangle inner = sliderKnobBounds;
+            inner.Inflate(-2, -2);
+            b.Draw(Game1.staminaRect, inner, Color.Gold);
 
-        string confirmText = "献祭";
-        Vector2 confirmTextSize = Game1.smallFont.MeasureString(confirmText);
-        Utility.drawTextWithShadow(b, confirmText, Game1.smallFont,
-            new Vector2(confirmButton.bounds.X + (confirmButton.bounds.Width - confirmTextSize.X) / 2,
-                       confirmButton.bounds.Y - 30), Game1.textColor);
-
-        string cancelText = "取消";
-        Vector2 cancelTextSize = Game1.smallFont.MeasureString(cancelText);
-        Utility.drawTextWithShadow(b, cancelText, Game1.smallFont,
-            new Vector2(cancelButton.bounds.X + (cancelButton.bounds.Width - cancelTextSize.X) / 2,
-                       cancelButton.bounds.Y - 30), Game1.textColor);
-
-        drawMouse(b);
-    }
-
-    private void DrawSliderTrack(SpriteBatch b)
-    {
-        b.Draw(Game1.staminaRect,
-            new Rectangle(sliderBounds.X, sliderBounds.Y + SliderHeight / 2 - 2, SliderWidth, 4), Color.DarkGray);
-
-        int highlightWidth = (int)(sliderPosition * SliderWidth);
-        b.Draw(Game1.staminaRect,
-            new Rectangle(sliderBounds.X, sliderBounds.Y + SliderHeight / 2 - 2, highlightWidth, 4), Color.Gold);
-    }
-
-    private void DrawSliderKnob(SpriteBatch b)
-    {
-        Rectangle sourceRect = new Rectangle(0, 256, 64, 64);
-        b.Draw(Game1.mouseCursors, sliderKnobBounds, sourceRect, Color.White);
+            // 3. 画个高光点 (可选，让它看起来立体点)
+            b.Draw(Game1.staminaRect, new Rectangle(inner.X + 2, inner.Y + 2, 8, 8), Color.White * 0.4f);
+        }
     }
 }

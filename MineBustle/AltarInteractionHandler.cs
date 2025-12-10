@@ -13,14 +13,16 @@ public class AltarInteractionHandler
     private readonly IModHelper helper;
     private readonly IMonitor monitor;
 
-    // 祭坛位置配置（皮埃尔杂货店）
-    private const string AltarLocationName = "SeedShop";
+    // 祭坛位置配置
+    // Mountain: 山区矿井入口
+    // UndergroundMine: 矿井内部（未来支持）
+    private const string AltarLocationName = "Mountain";
     private static readonly Vector2[] AltarTiles = new[]
     {
-        new Vector2(3, 17),
-        new Vector2(4, 17),
-        new Vector2(3, 18),
-        new Vector2(4, 18)
+        new Vector2(55, 7),  // 祭坛左上（根据玩家点击位置）
+        new Vector2(56, 7),  // 祭坛右上
+        new Vector2(55, 8),  // 祭坛左下
+        new Vector2(56, 8)   // 祭坛右下
     };
 
     public AltarInteractionHandler(IModHelper helper, IMonitor monitor)
@@ -54,6 +56,12 @@ public class AltarInteractionHandler
         var location = Game1.currentLocation;
         var tile = e.Cursor.GrabTile;
 
+        // 【调试】显示矿井内部的点击
+        if (location.Name.StartsWith("UndergroundMine"))
+        {
+            monitor.Log($"[调试-矿井] 在 {location.Name} 点击了位置: ({tile.X}, {tile.Y})", LogLevel.Info);
+        }
+
         // 检查是否在祭坛位置
         if (IsAltarLocation(location, tile))
         {
@@ -74,12 +82,15 @@ public class AltarInteractionHandler
         if (location.Name != AltarLocationName)
             return false;
 
+        // 【调试日志】显示所有在Mountain地图的点击位置
+        monitor.Log($"[调试] 在Mountain地图点击了位置: ({tile.X}, {tile.Y})", LogLevel.Info);
+
         // 检查是否点击了祭坛瓷砖
         foreach (var altarTile in AltarTiles)
         {
             if (tile == altarTile)
             {
-                monitor.Log($"玩家点击了祭坛位置: {tile}", LogLevel.Debug);
+                monitor.Log($"[成功] 点击了祭坛位置: ({tile.X}, {tile.Y})，打开菜单！", LogLevel.Info);
                 return true;
             }
         }
