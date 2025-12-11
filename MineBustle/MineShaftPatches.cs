@@ -14,31 +14,37 @@ namespace MineBustle;
 public class MineShaftPatches
 {
     /// <summary>
-    /// 获取当前的怪物生成倍率
-    /// 这个方法会被 IL 代码调用
+    /// 获取怪物生成倍率 (用于乘法)
     /// </summary>
-    /// <returns>当前倍率（1.0 - 10.0）</returns>
     public static double GetSpawnMultiplier()
     {
-        // 确保倍率至少为 1.0，防止出现 0 倍率导致不出怪
         double multiplier = ModEntry.Config.CurrentMultiplier;
         return multiplier > 0 ? multiplier : 1.0;
     }
 
     /// <summary>
-    /// IL Transpiler 方法
-    /// 在 adjustLevelChances 调用后，将 monsterChance 乘以我们的倍率
+    /// 获取石头生成的除数 (用于除法)
+    /// 如果配置开启了"减少石头"，则返回倍率；否则返回 1.0 (不减少)
     /// </summary>
-    /// <param name="instructions">原始 IL 指令</param>
-    /// <returns>修改后的 IL 指令</returns>
+    public static double GetStoneDivisor()
+    {
+        // 如果配置开启，返回倍率（例如 10.0），让石头概率 / 10
+        if (ModEntry.Config.ReduceStones)
+        {
+            double multiplier = ModEntry.Config.CurrentMultiplier;
+            return multiplier > 0 ? multiplier : 1.0;
+        }
+        // 如果配置关闭，返回 1.0，石头概率 / 1，即不变
+        return 1.0;
+    }
+
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {
         var codes = new List<CodeInstruction>(instructions);
-        var adjustLevelChancesMethod = AccessTools.Method(typeof(MineShaft), "adjustLevelChances");
-
+        
         try
         {
-            // 1. 找到 adjustLevelChances 的调用位置
+            // 1. 定位 adjustLevelChances 调用
             int callIndex = -1;
             for (int i = 0; i < codes.Count; i++)
             {
@@ -51,58 +57,61 @@ public class MineShaftPatches
 
             if (callIndex == -1)
             {
-                ModEntry.ModMonitor.Log("无法定位 adjustLevelChances 方法调用，Transpiler 失败！", LogLevel.Error);
+                ModEntry.ModMonitor.Log("无法定位 adjustLevelChances，补丁失败。", LogLevel.Error);
                 return instructions;
             }
 
-            // 2. 自动获取 monsterChance 变量的索引
-            // adjustLevelChances 的签名是 (ref stoneChance, ref monsterChance, ref itemChance, ref gemStoneChance)
-            // 调用前的 IL 栈是：
-            // ldloca.s stoneChance
-            // ldloca.s monsterChance  <-- 我们要找这个（倒数第3个指令）
-            // ldloca.s itemChance
-            // ldloca.s gemStoneChance
-            // call adjustLevelChances
-
-            // 回退 3 步，找到加载 monsterChance 地址的指令
+            // 2. 获取变量索引
+            // 倒数第3个是 monsterChance (Call -> Gem -> Item -> Monster)
             int monsterChanceLoadIndex = callIndex - 3;
-            var monsterChanceInstruction = codes[monsterChanceLoadIndex];
+            // 倒数第4个是 stoneChance (Call -> Gem -> Item -> Monster -> Stone)
+            int stoneChanceLoadIndex = callIndex - 4;
 
-            // 验证指令类型
-            if (monsterChanceInstruction.opcode != OpCodes.Ldloca_S && monsterChanceInstruction.opcode != OpCodes.Ldloca)
+            var monsterInstruction = codes[monsterChanceLoadIndex];
+            var stoneInstruction = codes[stoneChanceLoadIndex];
+
+            // 验证指令
+            if (!IsLoadLocalAddress(monsterInstruction) || !IsLoadLocalAddress(stoneInstruction))
             {
-                ModEntry.ModMonitor.Log($"意外的指令类型: {monsterChanceInstruction.opcode}，期望 Ldloca_S 或 Ldloca", LogLevel.Error);
+                ModEntry.ModMonitor.Log("变量加载指令不匹配，补丁失败。", LogLevel.Error);
                 return instructions;
             }
 
-            // 获取 monsterChance 变量的索引（操作数）
-            object monsterVariableIndex = monsterChanceInstruction.operand;
+            object monsterVarIndex = monsterInstruction.operand;
+            object stoneVarIndex = stoneInstruction.operand;
 
-            // 3. 在 call 指令之后插入我们的乘法逻辑
-            var newInstructions = new List<CodeInstruction>
-            {
-                // 加载 monsterChance 变量的值
-                new CodeInstruction(OpCodes.Ldloc_S, monsterVariableIndex),
-                // 调用我们的方法获取倍率
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(MineShaftPatches), nameof(GetSpawnMultiplier))),
-                // 相乘：monsterChance * multiplier
-                new CodeInstruction(OpCodes.Mul),
-                // 将结果存回 monsterChance 变量
-                new CodeInstruction(OpCodes.Stloc_S, monsterVariableIndex)
-            };
+            // 3. 注入逻辑
+            var newInstructions = new List<CodeInstruction>();
 
-            // 在 call 指令后插入
+            // --- A: 提升怪物概率 (monster * Multiplier) ---
+            newInstructions.Add(new CodeInstruction(OpCodes.Ldloc_S, monsterVarIndex));
+            newInstructions.Add(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(MineShaftPatches), nameof(GetSpawnMultiplier))));
+            newInstructions.Add(new CodeInstruction(OpCodes.Mul));
+            newInstructions.Add(new CodeInstruction(OpCodes.Stloc_S, monsterVarIndex));
+
+            // --- B: 降低石头概率 (stone / Divisor) ---
+            // 这里调用 GetStoneDivisor，根据配置决定是除以 10 还是除以 1
+            newInstructions.Add(new CodeInstruction(OpCodes.Ldloc_S, stoneVarIndex));
+            newInstructions.Add(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(MineShaftPatches), nameof(GetStoneDivisor))));
+            newInstructions.Add(new CodeInstruction(OpCodes.Div)); 
+            newInstructions.Add(new CodeInstruction(OpCodes.Stloc_S, stoneVarIndex));
+
+            // 插入代码
             codes.InsertRange(callIndex + 1, newInstructions);
-
-            ModEntry.ModMonitor.Log($"成功注入怪物生成倍率修改代码！变量索引: {monsterVariableIndex}", LogLevel.Debug);
+            
+            ModEntry.ModMonitor.Log($"成功注入概率修改代码。石头变量: {stoneVarIndex}, 怪物变量: {monsterVarIndex}", LogLevel.Debug);
         }
         catch (System.Exception ex)
         {
-            ModEntry.ModMonitor.Log($"Transpiler 执行失败: {ex.Message}\n{ex.StackTrace}", LogLevel.Error);
+            ModEntry.ModMonitor.Log($"Transpiler 异常: {ex.Message}", LogLevel.Error);
             return instructions;
         }
 
         return codes;
     }
-}
 
+    private static bool IsLoadLocalAddress(CodeInstruction instruction)
+    {
+        return instruction.opcode == OpCodes.Ldloca || instruction.opcode == OpCodes.Ldloca_S;
+    }
+}

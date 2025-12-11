@@ -12,6 +12,12 @@ public class ModConfig
     public double CurrentMultiplier { get; set; } = 1.0;
 
     /// <summary>
+    /// 是否为了给怪物腾出空间而减少石头生成
+    /// 默认开启 (True)
+    /// </summary>
+    public bool ReduceStones { get; set; } = true;
+
+    /// <summary>
     /// 基础献祭费用
     /// </summary>
     public int BaseFee { get; set; } = 500;

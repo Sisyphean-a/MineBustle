@@ -122,6 +122,15 @@ public class ModEntry : Mod
             formatValue: value => value.ToString("F1")
         );
 
+        // --- 新增: 是否减少石头开关 ---
+        configMenu.AddBoolOption(
+            mod: ModManifest,
+            name: () => "减少石头生成",
+            tooltip: () => "开启后，当怪物倍率增加时，会按比例减少石头生成，为怪物腾出生成空间。\n关闭此项可能会导致在高倍率下怪物数量无法达到预期（被石头挤占）。",
+            getValue: () => Config.ReduceStones,
+            setValue: value => Config.ReduceStones = value
+        );
+
         Monitor.Log("Generic Mod Config Menu 集成成功！", LogLevel.Debug);
     }
 
