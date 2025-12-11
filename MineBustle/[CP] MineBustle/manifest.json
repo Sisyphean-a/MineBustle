@@ -1,13 +1,12 @@
 {
   "Name": "[CP] MineBustle - Yoba's Altar",
-  "Author": "YourName",
+  "Author": "xixifu",
   "Version": "1.0.0",
   "Description": "Adds Yoba's Altar to the Mountain map near the mine entrance.",
-  "UniqueID": "YourName.MineBustle.CP",
+  "UniqueID": "xixifu.MineBustle.CP",
   "MinimumApiVersion": "3.0.0",
   "UpdateKeys": [],
   "ContentPackFor": {
     "UniqueID": "Pathoschild.ContentPatcher"
   }
 }
-

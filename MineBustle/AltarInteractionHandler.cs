@@ -17,13 +17,19 @@ public class AltarInteractionHandler
     // Mountain: 山区矿井入口
     // UndergroundMine: 矿井内部（未来支持）
     private const string AltarLocationName = "Mountain";
-    private static readonly Vector2[] AltarTiles = new[]
+    private static readonly List<Vector2> AltarTiles = new();
+
+    static AltarInteractionHandler()
     {
-        new Vector2(55, 7),  // 祭坛左上（根据玩家点击位置）
-        new Vector2(56, 7),  // 祭坛右上
-        new Vector2(55, 8),  // 祭坛左下
-        new Vector2(56, 8)   // 祭坛右下
-    };
+        // 8x8 区域 (128x128像素)
+        for (int x = 55; x < 55 + 8; x++)
+        {
+            for (int y = 7; y < 7 + 8; y++)
+            {
+                AltarTiles.Add(new Vector2(x, y));
+            }
+        }
+    }
 
     public AltarInteractionHandler(IModHelper helper, IMonitor monitor)
     {
