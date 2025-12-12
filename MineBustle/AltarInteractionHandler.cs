@@ -14,17 +14,21 @@ public class AltarInteractionHandler
     private readonly IMonitor monitor;
 
     // 祭坛位置配置
-    // Mountain: 山区矿井入口
+    // Mine: 山区矿井入口
     // UndergroundMine: 矿井内部（未来支持）
-    private const string AltarLocationName = "Mountain";
+    private const string AltarLocationName = "Mine";
     private static readonly List<Vector2> AltarTiles = new();
 
     static AltarInteractionHandler()
     {
-        // 8x8 区域 (128x128像素)
-        for (int x = 55; x < 55 + 8; x++)
+        // 根据 content.json 的 ToArea 修改:
+        // "X": 19 -> x 起始值
+        // "Y": 2  -> y 起始值
+        // "Width": 3 -> x 循环次数
+        // "Height": 3 -> y 循环次数
+        for (int x = 19; x < 19 + 3; x++)
         {
-            for (int y = 7; y < 7 + 8; y++)
+            for (int y = 2; y < 2 + 3; y++)
             {
                 AltarTiles.Add(new Vector2(x, y));
             }
@@ -88,8 +92,8 @@ public class AltarInteractionHandler
         if (location.Name != AltarLocationName)
             return false;
 
-        // 【调试日志】显示所有在Mountain地图的点击位置
-        monitor.Log($"[调试] 在Mountain地图点击了位置: ({tile.X}, {tile.Y})", LogLevel.Info);
+        // 【调试日志】显示所有在Mine地图的点击位置
+        monitor.Log($"[调试] 在Mine地图点击了位置: ({tile.X}, {tile.Y})", LogLevel.Info);
 
         // 检查是否点击了祭坛瓷砖
         foreach (var altarTile in AltarTiles)
