@@ -248,7 +248,7 @@ public class ModEntry : Mod
             // 根据原始 content.json : "ToArea": { "X": 19, "Y": 2, "Width": 3, "Height": 3 }
             // 这意味着我们要把 sourceMap 贴到目标地图的 (19, 2) 位置。
             // 假设 altar2.tmx 本身就是 3x3 大小，我们直接把整个 sourceMap 贴过去。
-            Rectangle targetArea = new Rectangle(19, 2, 3, 3);
+            Rectangle targetArea = new Rectangle(19, 2, 2, 3);
 
             // 4. 执行合并 (PatchMap)
             // SMAPI 的 PatchMap 方法会自动处理图层合并（Layer Merging）。
