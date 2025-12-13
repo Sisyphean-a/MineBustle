@@ -43,13 +43,13 @@ namespace MineBustle
             int contentTop = yPositionOnScreen + 138; 
             
             // 1. 标题位置 (从内容顶部开始)
-            string title = "由巴的祭坛";
+            string title = ModEntry.ModHelper.Translation.Get("ui.altar.title");
             Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
             // 标题稍微往上提一点点，作为大标题
             titlePosition = new Vector2(xPositionOnScreen + (MenuWidth - titleSize.X) / 2, contentTop - 40);
 
             // 2. 描述位置 (放在标题下方)
-            string description = "献祭金币以增强今日矿井的怪物生成";
+            string description = ModEntry.ModHelper.Translation.Get("ui.altar.description");
             Vector2 descSize = Game1.smallFont.MeasureString(description);
             descriptionPosition = new Vector2(xPositionOnScreen + (MenuWidth - descSize.X) / 2, contentTop + 20);
 
@@ -194,7 +194,7 @@ namespace MineBustle
             if (Game1.player.Money < currentCost)
             {
                 Game1.playSound("cancel");
-                Game1.showRedMessage("金币不足！");
+                Game1.showRedMessage(ModEntry.ModHelper.Translation.Get("ui.altar.not_enough_money"));
                 return;
             }
 
@@ -214,7 +214,7 @@ namespace MineBustle
                 80f, 8, 0, Game1.player.Position, false, false, 1f, 0f, Color.Gold, 4f, 0f, 0f, 0f
             ));
 
-            string message = $"献祭成功！倍率：{currentMultiplier:F1}x";
+            string message = ModEntry.ModHelper.Translation.Get("ui.altar.success_hud", new { val = $"{currentMultiplier:F1}" });
             Game1.addHUDMessage(new HUDMessage(message, HUDMessage.achievement_type));
 
             ModEntry.ModMonitor.Log($"玩家献祭 {currentCost}g，设置倍率为 {currentMultiplier:F1}x", StardewModdingAPI.LogLevel.Info);
@@ -230,11 +230,11 @@ namespace MineBustle
             Game1.drawDialogueBox(xPositionOnScreen, yPositionOnScreen, MenuWidth, MenuHeight, false, true);
 
             // 1. 标题
-            Utility.drawTextWithShadow(b, "由巴的祭坛", Game1.dialogueFont,
+            Utility.drawTextWithShadow(b, ModEntry.ModHelper.Translation.Get("ui.altar.title"), Game1.dialogueFont,
                 titlePosition, Game1.textColor);
 
             // 2. 描述 (=== 核心修复 2: 使用 Game1.textColor 提高对比度 ===)
-            Utility.drawTextWithShadow(b, "献祭金币以增强今日矿井的怪物生成", Game1.smallFont,
+            Utility.drawTextWithShadow(b, ModEntry.ModHelper.Translation.Get("ui.altar.description"), Game1.smallFont,
                 descriptionPosition, Game1.textColor); // 这里改为了 textColor，深褐色
 
             // 3. 滑块组件
@@ -245,7 +245,7 @@ namespace MineBustle
             float infoStartHeight = sliderBounds.Y + 60;
             
             // 4. 倍率显示
-            string multiplierText = $"怪物生成倍率: {currentMultiplier:F1}x";
+            string multiplierText = ModEntry.ModHelper.Translation.Get("ui.altar.multiplier_label", new { val = $"{currentMultiplier:F1}" });
             Vector2 multiplierSize = Game1.dialogueFont.MeasureString(multiplierText);
             Utility.drawTextWithShadow(b, multiplierText, Game1.dialogueFont,
                 new Vector2(xPositionOnScreen + (MenuWidth - multiplierSize.X) / 2, infoStartHeight), Game1.textColor);
@@ -255,7 +255,7 @@ namespace MineBustle
             // 自定义一个深红色，比纯红看起来舒服一点
             Color costColor = canAfford ? new Color(50, 150, 50) : new Color(200, 60, 60); 
 
-            string costText = $"所需金币: {currentCost}g";
+            string costText = ModEntry.ModHelper.Translation.Get("ui.altar.cost_label", new { val = currentCost });
             Vector2 costSize = Game1.dialogueFont.MeasureString(costText);
             Utility.drawTextWithShadow(b, costText, Game1.dialogueFont,
                 new Vector2(xPositionOnScreen + (MenuWidth - costSize.X) / 2, infoStartHeight + 50), costColor);

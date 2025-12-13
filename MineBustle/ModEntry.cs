@@ -110,7 +110,7 @@ public class ModEntry : Mod
         // 添加配置选项
         configMenu.AddBoolOption(
             mod: ModManifest,
-            name: () => "启用祭坛",
+            name: () => Helper.Translation.Get("config.enable_altar.name"),
             tooltip: () => "",
             getValue: () => Config.EnableAltar,
             setValue: value => Config.EnableAltar = value
@@ -118,8 +118,8 @@ public class ModEntry : Mod
 
         configMenu.AddNumberOption(
             mod: ModManifest,
-            name: () => "基础费用",
-            tooltip: () => "献祭的基础金币费用（默认: 500）",
+            name: () => Helper.Translation.Get("config.base_fee.name"),
+            tooltip: () => Helper.Translation.Get("config.base_fee.tooltip"),
             getValue: () => (float)Config.BaseFee,
             setValue: value => Config.BaseFee = (int)value,
             min: 0f,
@@ -129,8 +129,8 @@ public class ModEntry : Mod
 
         configMenu.AddNumberOption(
             mod: ModManifest,
-            name: () => "通胀系数",
-            tooltip: () => "基于总收入的费用增长系数（默认: 0.0001）",
+            name: () => Helper.Translation.Get("config.inflation.name"),
+            tooltip: () => Helper.Translation.Get("config.inflation.tooltip"),
             getValue: () => (float)Config.InflationCoefficient,
             setValue: value => Config.InflationCoefficient = (double)value,
             min: 0f,
@@ -141,8 +141,8 @@ public class ModEntry : Mod
 
         configMenu.AddNumberOption(
             mod: ModManifest,
-            name: () => "惩罚指数",
-            tooltip: () => "倍率增长的惩罚指数（默认: 1.0）",
+            name: () => Helper.Translation.Get("config.penalty.name"),
+            tooltip: () => Helper.Translation.Get("config.penalty.tooltip"),
             getValue: () => (float)Config.PenaltyExponent,
             setValue: value => Config.PenaltyExponent = (double)value,
             min: 1.0f,
@@ -154,8 +154,8 @@ public class ModEntry : Mod
         // --- 新增: 是否减少石头开关 ---
         configMenu.AddBoolOption(
             mod: ModManifest,
-            name: () => "减少石头生成",
-            tooltip: () => "开启后，当怪物倍率增加时，会按比例减少石头生成，为怪物腾出生成空间。\n关闭此项可能会导致在高倍率下怪物数量无法达到预期（被石头挤占）。",
+            name: () => Helper.Translation.Get("config.reduce_stones.name"),
+            tooltip: () => Helper.Translation.Get("config.reduce_stones.tooltip"),
             getValue: () => Config.ReduceStones,
             setValue: value => Config.ReduceStones = value
         );
