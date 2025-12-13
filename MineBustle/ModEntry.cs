@@ -2,6 +2,10 @@ using HarmonyLib;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using Microsoft.Xna.Framework.Graphics;
+using xTile;
+using xTile.Dimensions;
+using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace MineBustle;
 
@@ -30,6 +34,15 @@ public class ModEntry : Mod
     /// </summary>
     private AltarInteractionHandler? altarHandler;
 
+    // 定义贴图的虚拟路径
+    // 这个路径必须是全局唯一的，用于在内存中链接 TMX 地图和 PNG 贴图
+    // "Mods/MineBustle/AltarTilesheet" 是我们在内存中给 altar4.png 起的名字
+    private const string TilesheetVirtualPath = "Mods/MineBustle/AltarTilesheet";
+    
+    // 定义资源文件的本地相对路径 (相对于 Mods/MineBustle/ 文件夹)
+    private const string LocalMapPath = "assets/altar2.tmx";
+    private const string LocalTexturePath = "assets/altar4.png";
+
     /// <summary>
     /// 模组入口方法
     /// </summary>
@@ -47,6 +60,9 @@ public class ModEntry : Mod
         // 注册事件
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
         helper.Events.GameLoop.DayStarted += OnDayStarted;
+        
+        // 注册资源请求事件 (替代 Content Patcher 的核心)
+        helper.Events.Content.AssetRequested += OnAssetRequested;
 
         // 应用 Harmony 补丁
         var harmony = new Harmony(ModManifest.UniqueID);
@@ -83,7 +99,12 @@ public class ModEntry : Mod
         configMenu.Register(
             mod: ModManifest,
             reset: () => Config = new ModConfig(),
-            save: () => Helper.WriteConfig(Config)
+            save: () => {
+                Helper.WriteConfig(Config);
+                // 配置保存后，立即使矿井地图失效，强制游戏下一帧重新加载
+                // 这样用户在 GMCM 中切换开关后，祭坛会立即消失或出现
+                Helper.GameContent.InvalidateCache("Maps/Mine");
+            }
         );
 
         // 添加配置选项
@@ -149,6 +170,87 @@ public class ModEntry : Mod
     public static void SaveConfig()
     {
         ModHelper.WriteConfig(Config);
+    }
+
+    /// <summary>
+    /// 当游戏请求加载任何资源时触发。
+    /// 这里我们处理两件事：
+    /// 1. 提供虚拟的祭坛贴图文件。
+    /// 2. 拦截 Maps/Mine 并将祭坛地图补丁覆盖上去。
+    /// </summary>
+    private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
+    {
+        // --- 任务 1: 加载贴图 (Action: Load) ---
+        // 判断请求的资源名称是否匹配我们定义的虚拟路径
+        if (e.Name.IsEquivalentTo(TilesheetVirtualPath))
+        {
+            // 使用 SMAPI 的 LoadFromModFile API 加载本地 png
+            e.LoadFromModFile<Texture2D>(LocalTexturePath, AssetLoadPriority.Medium);
+        }
+
+        // --- 任务 2: 编辑地图 (Action: EditMap) ---
+        // 判断请求的资源是否是矿井地图
+        if (e.Name.IsEquivalentTo("Maps/Mine"))
+        {
+            // 检查配置是否开启 (对应 content.json 中的 "When": { "EnableAltar": "true" })
+            if (Config.EnableAltar)
+            {
+                // 请求 SMAPI 编辑该资源
+                e.Edit(asset =>
+                {
+                    // 获取地图编辑器接口
+                    var editor = asset.AsMap();
+                    
+                    // 执行具体的补丁应用逻辑
+                    ApplyAltarPatch(editor);
+                });
+            }
+        }
+    }
+
+    /// <summary>
+    /// 将本地的 altar2.tmx 补丁应用到游戏原版地图上
+    /// </summary>
+    /// <param name="editor">SMAPI 提供的地图编辑器接口</param>
+    private void ApplyAltarPatch(IAssetDataForMap editor)
+    {
+        try 
+        {
+            // 1. 加载本地的 TMX 地图文件
+            // 注意：这里我们加载它作为一个独立的 Map 对象
+            Map sourceMap = Helper.ModContent.Load<Map>(LocalMapPath);
+
+            // 2. 【关键步骤】修复贴图引用 (Re-linking Tilesheets)
+            // altar2.tmx 内部写着 <image source="altar4.png"/>
+            // 我们必须遍历这个源地图的所有图块集，找到引用 altar4.png 的那个，
+            // 并将其 ImageSource 修改为我们的虚拟路径。
+            foreach (var tilesheet in sourceMap.TileSheets)
+            {
+                // 检查 ImageSource 是否包含文件名（路径分隔符可能不同，所以用 EndsWith 或 Contains）
+                if (tilesheet.ImageSource.Contains("altar4.png"))
+                {
+                    // 修改指向，指向内存中的虚拟资产
+                    // 这样当游戏渲染这个地图时，会去请求 TilesheetVirtualPath，
+                    // 从而触发 OnAssetRequested 中的第一个 if 分支。
+                    tilesheet.ImageSource = TilesheetVirtualPath;
+                }
+            }
+
+            // 3. 定义覆盖区域
+            // 根据原始 content.json : "ToArea": { "X": 19, "Y": 2, "Width": 3, "Height": 3 }
+            // 这意味着我们要把 sourceMap 贴到目标地图的 (19, 2) 位置。
+            // 假设 altar2.tmx 本身就是 3x3 大小，我们直接把整个 sourceMap 贴过去。
+            Rectangle targetArea = new Rectangle(19, 2, 3, 3);
+
+            // 4. 执行合并 (PatchMap)
+            // SMAPI 的 PatchMap 方法会自动处理图层合并（Layer Merging）。
+            // 它会将 sourceMap 的 "Front" 层覆盖到 targetMap 的 "Front" 层，依此类推。
+            editor.PatchMap(sourceMap, targetArea);
+        }
+        catch (Exception ex)
+        {
+            ModMonitor.Log($"应用地图补丁时发生错误: {ex.Message}", LogLevel.Error);
+        }
     }
 }
 

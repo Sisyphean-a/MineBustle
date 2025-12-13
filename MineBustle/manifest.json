@@ -6,11 +6,5 @@
   "UniqueID": "xixifu.MineBustle",
   "EntryDll": "MineBustle.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": [],
-  "Dependencies": [
-    {
-      "UniqueID": "xixifu.MineBustle.CP",
-      "IsRequired": true
-    }
-  ]
+  "UpdateKeys": []
 }
