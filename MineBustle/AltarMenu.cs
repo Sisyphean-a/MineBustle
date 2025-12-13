@@ -39,8 +39,8 @@ namespace MineBustle
             MenuHeight)
         {
             // === 核心修复 1: 大幅增加顶部边距 ===
-            // 之前的 +96 还不够，对话框顶部边框很厚，这里推到 +128 开始画内容
-            int contentTop = yPositionOnScreen + 128; 
+            // 之前的 +96 还不够，对话框顶部边框很厚，这里推到 +138 开始画内容
+            int contentTop = yPositionOnScreen + 138; 
             
             // 1. 标题位置 (从内容顶部开始)
             string title = "由巴的祭坛";

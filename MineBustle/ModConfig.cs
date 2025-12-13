@@ -36,6 +36,6 @@ public class ModConfig
     /// <summary>
     /// 惩罚指数（倍率越高，费用增长越快）
     /// </summary>
-    public double PenaltyExponent { get; set; } = 1.5;
+    public double PenaltyExponent { get; set; } = 1.0;
 }
 

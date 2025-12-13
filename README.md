@@ -64,7 +64,7 @@ Cost = (BaseFee + α × TotalEarnings) × (Multiplier - 1)^β
   "CurrentMultiplier": 1.0,        // 当前倍率（自动管理，无需手动修改）
   "BaseFee": 500,                  // 基础献祭费用
   "InflationCoefficient": 0.001,   // 通胀系数
-  "PenaltyExponent": 1.5           // 惩罚指数
+  "PenaltyExponent": 1.0           // 惩罚指数
 }
 ```
 

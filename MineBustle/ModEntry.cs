@@ -142,7 +142,7 @@ public class ModEntry : Mod
         configMenu.AddNumberOption(
             mod: ModManifest,
             name: () => "惩罚指数",
-            tooltip: () => "倍率增长的惩罚指数（默认: 1.5）",
+            tooltip: () => "倍率增长的惩罚指数（默认: 1.0）",
             getValue: () => (float)Config.PenaltyExponent,
             setValue: value => Config.PenaltyExponent = (double)value,
             min: 1.0f,
