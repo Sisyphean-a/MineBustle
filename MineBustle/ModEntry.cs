@@ -108,6 +108,14 @@ public class ModEntry : Mod
         );
 
         // 添加配置选项
+        configMenu.AddBoolOption(
+            mod: ModManifest,
+            name: () => "启用祭坛",
+            tooltip: () => "",
+            getValue: () => Config.EnableAltar,
+            setValue: value => Config.EnableAltar = value
+        );
+
         configMenu.AddNumberOption(
             mod: ModManifest,
             name: () => "基础费用",
@@ -245,7 +253,7 @@ public class ModEntry : Mod
             // 4. 执行合并 (PatchMap)
             // SMAPI 的 PatchMap 方法会自动处理图层合并（Layer Merging）。
             // 它会将 sourceMap 的 "Front" 层覆盖到 targetMap 的 "Front" 层，依此类推。
-            editor.PatchMap(sourceMap, targetArea);
+            editor.PatchMap(sourceMap, targetArea: targetArea);
         }
         catch (Exception ex)
         {

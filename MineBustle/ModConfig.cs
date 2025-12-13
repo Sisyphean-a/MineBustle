@@ -12,6 +12,12 @@ public class ModConfig
     public double CurrentMultiplier { get; set; } = 1.0;
 
     /// <summary>
+    /// 是否启用祭坛功能
+    /// 默认开启 (True)
+    /// </summary>
+    public bool EnableAltar { get; set; } = true;
+
+    /// <summary>
     /// 是否为了给怪物腾出空间而减少石头生成
     /// 默认开启 (True)
     /// </summary>
